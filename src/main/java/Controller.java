@@ -1,177 +1,3 @@
-//import models.Bind;
-//
-//import javax.script.*;
-//import java.io.*;
-//import java.lang.reflect.*;
-//import java.nio.file.Files;
-//import java.nio.file.Path;
-//import java.util.*;
-//import java.util.stream.Collectors;
-//
-//public class Controller {
-//    private final Object model;
-//    private final ScriptEngine groovy;
-//    private final Bindings bindings;
-//
-//    public Controller(String modelName) throws Exception {
-//        this.model = Class.forName("models." + modelName).getDeclaredConstructor().newInstance();
-//        ScriptEngineManager manager = new ScriptEngineManager();
-//        this.groovy = manager.getEngineByName("groovy");
-//        this.bindings = new SimpleBindings();
-//        bindModelFields();
-//    }
-//
-//    private void bindModelFields() {
-//        for (Field field : model.getClass().getDeclaredFields()) {
-//            if (field.isAnnotationPresent(Bind.class)) {
-//                field.setAccessible(true);
-//                try {
-//                    bindings.put(field.getName(), field.get(model));
-//                } catch (IllegalAccessException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        }
-//    }
-//
-//    public Controller readDataFrom(String fname) {
-//        try (BufferedReader reader = Files.newBufferedReader(Path.of(fname))) {
-//            String firstLine = reader.readLine();
-//            if (firstLine == null || firstLine.isEmpty()) return this;
-//
-//            StringTokenizer tokenizer = new StringTokenizer(firstLine);
-//            tokenizer.nextToken();
-//            int yearCount = tokenizer.countTokens();
-//            int[] lata = new int[yearCount];
-//            for (int i = 0; i < yearCount; i++) {
-//                lata[i] = Integer.parseInt(tokenizer.nextToken());
-//            }
-//            bindings.put("LATA", lata);
-//
-//            Map<String, double[]> dataMap = new HashMap<>();
-//            String line;
-//            while ((line = reader.readLine()) != null) {
-//                String[] parts = line.trim().split("\\s+");
-//                if (parts.length > 1) {
-//                    double[] values = new double[yearCount];
-//                    Arrays.fill(values, Double.NaN);
-//                    for (int i = 1; i < parts.length; i++) {
-//                        values[i - 1] = Double.parseDouble(parts[i]);
-//                    }
-//                    for (int i = parts.length - 1; i < yearCount; i++) {
-//                        values[i] = values[parts.length - 2];
-//                    }
-//                    dataMap.put(parts[0], values);
-//                }
-//            }
-//            updateModelFields(dataMap, yearCount);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        return this;
-//    }
-//
-//    private void updateModelFields(Map<String, double[]> dataMap, int yearCount) {
-//        Arrays.stream(model.getClass().getDeclaredFields())
-//                .filter(field -> field.isAnnotationPresent(Bind.class))
-//                .forEach(field -> {
-//                    field.setAccessible(true);
-//                    try {
-//                        if (field.getName().equals("LL")) {
-//                            field.set(model, yearCount);
-//                        } else {
-//                            field.set(model, dataMap.getOrDefault(field.getName(), new double[yearCount]));
-//                        }
-//                        bindings.put(field.getName(), field.get(model));
-//                    } catch (IllegalAccessException e) {
-//                        e.printStackTrace();
-//                    }
-//                });
-//    }
-//
-//    public Controller runModel() {
-//        try {
-//            Method runMethod = model.getClass().getMethod("run");
-//            runMethod.invoke(model);
-//            bindModelFields();
-//        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-//            e.printStackTrace();
-//        }
-//        return this;
-//    }
-//
-//    public Controller runScriptFromFile(String fname) {
-//        try {
-//            String script = Files.readString(Path.of(fname));
-//            groovy.eval(script, bindings);
-//        } catch (IOException | ScriptException e) {
-//            e.printStackTrace();
-//        }
-//        return this;
-//    }
-//
-//    public String getResultsAsTsv() {
-//        StringBuilder tsvBuilder = new StringBuilder();
-//
-//        // Add LATA values as the first line
-//        int[] lataValues = (int[]) bindings.get("LATA");
-//        if (lataValues != null) {
-//            tsvBuilder.append("LATA");
-//            for (int value : lataValues) {
-//                tsvBuilder.append("\t").append(value);
-//            }
-//            tsvBuilder.append("\n");
-//        }
-//
-//        // Collect all unique field names
-//        Set<String> processedFields = new HashSet<>();
-//
-//        // Process model fields
-//        Arrays.stream(model.getClass().getDeclaredFields())
-//                .filter(field -> field.isAnnotationPresent(Bind.class) &&
-//                        field.getName().length() > 1 &&
-//                        !field.getName().matches("[ikx]") &&
-//                        !field.getName().equals("LL"))
-//                .forEach(field -> {
-//                    field.setAccessible(true);
-//                    try {
-//                        Object value = field.get(model);
-//                        String valueStr = formatValue(value);
-//                        tsvBuilder.append(field.getName()).append("\t").append(valueStr).append("\n");
-//                        processedFields.add(field.getName());
-//                    } catch (IllegalAccessException e) {
-//                        e.printStackTrace();
-//                    }
-//                });
-//
-//        // Process additional bindings not in model fields
-//        bindings.forEach((key, value) -> {
-//            if (!processedFields.contains(key) &&
-//                    key.length() > 1 &&
-//                    !key.matches("[ikx]") &&
-//                    !key.equals("LATA") &&
-//                    !key.equals("LL")) {
-//                String valueStr = formatValue(value);
-//                tsvBuilder.append(key).append("\t").append(valueStr).append("\n");
-//            }
-//        });
-//
-//        return tsvBuilder.toString();
-//    }
-//
-//    // Helper method to format array and other values
-//    private String formatValue(Object value) {
-//        if (value instanceof double[]) {
-//            double[] doubleArray = (double[]) value;
-//            return Arrays.stream(doubleArray)
-//                    .mapToObj(String::valueOf)
-//                    .collect(Collectors.joining("\t"));
-//        }
-//        return String.valueOf(value);
-//    }
-//
-//}
-
 import models.Bind;
 
 import javax.script.*;
@@ -215,22 +41,24 @@ public class Controller {
             String firstLine = reader.readLine();
             if (firstLine == null || firstLine.isEmpty()) return this;
 
-            StringTokenizer tokenizer = new StringTokenizer(firstLine);
-            tokenizer.nextToken();
-            int yearCount = tokenizer.countTokens();
+            // Fill the LATA row based on LL(yearCount)
+            String[] yearNames = firstLine.trim().split("\\s+");
+            int yearCount = yearNames.length - 1;
             int[] lata = new int[yearCount];
+
             for (int i = 0; i < yearCount; i++) {
-                lata[i] = Integer.parseInt(tokenizer.nextToken());
+                lata[i] = Integer.parseInt(yearNames[i + 1]);
             }
             bindings.put("LATA", lata);
 
+            // Fill the remaining model variables
             Map<String, double[]> dataMap = new HashMap<>();
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.trim().split("\\s+");
                 if (parts.length > 1) {
                     double[] values = new double[yearCount];
-                    Arrays.fill(values, Double.NaN);
+                    Arrays.fill(values, 0.0);
                     for (int i = 1; i < parts.length; i++) {
                         values[i - 1] = Double.parseDouble(parts[i]);
                     }
@@ -329,8 +157,7 @@ public class Controller {
         bindings.forEach((key, value) -> {
             if (!Arrays.stream(model.getClass().getDeclaredFields())
                     .anyMatch(field -> field.getName().equals(key)) &&
-                    key.length() > 1 &&
-                    !key.matches("[ikx]") &&
+                    !key.matches("[a-z]") &&
                     !key.equals("LATA") &&
                     !key.equals("LL")) {
                 String valueStr = formatValue(value);

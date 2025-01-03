@@ -1,0 +1,7 @@
+LATA 2020 2021 2022 2023 2024
+growthRatesProduction 1.02
+growthRatesConsumption 1.03
+growthRatesSavings 1.02
+production 224.98
+consumption 123.45
+savings 9000
