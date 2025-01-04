@@ -12,25 +12,20 @@ public class Model2 {
     private double[] growthRatesSavings; // the growth rate of savings
 
     @Bind
-    private double[] production; // production
+    private double[] production;
     @Bind
-    private double[] consumption; // consumption
+    private double[] consumption;
     @Bind
-    private double[] savings; // savings
+    private double[] savings;
     @Bind
-    private double[] netWealth; // net wealth
+    private double[] netWealth;
 
     private double temp; // auxiliary field, not part of the data model
 
     public Model2() {
     }
 
-    /**
-     * This method performs calculations based on the model's fields.
-     * It simulates how production, consumption, savings, and net wealth evolve over the years.
-     */
     public void run() {
-        // Initialize arrays
         netWealth = new double[LL];
         netWealth[0] = production[0] - consumption[0] + savings[0];
 

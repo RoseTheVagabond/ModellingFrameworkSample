@@ -23,11 +23,13 @@ public class Controller {
         bindModelFields();
     }
 
+    // Initialises bindings and makes fields accessible
     private void bindModelFields() {
         for (Field field : model.getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(Bind.class)) {
                 field.setAccessible(true);
                 try {
+                    // Stores values in a bindings map
                     bindings.put(field.getName(), field.get(model));
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
@@ -41,7 +43,7 @@ public class Controller {
             String firstLine = reader.readLine();
             if (firstLine == null || firstLine.isEmpty()) return this;
 
-            // Fill the LATA row based on LL(yearCount)
+            // Sets values for LATA
             String[] yearNames = firstLine.trim().split("\\s+");
             int yearCount = yearNames.length - 1;
             int[] lata = new int[yearCount];
@@ -51,7 +53,7 @@ public class Controller {
             }
             bindings.put("LATA", lata);
 
-            // Fill the remaining model variables
+            // Handles other variables
             Map<String, double[]> dataMap = new HashMap<>();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -84,6 +86,7 @@ public class Controller {
                         if (field.getName().equals("LL")) {
                             field.set(model, yearCount);
                         } else {
+                            //Sets field value, using empty array as default
                             field.set(model, dataMap.getOrDefault(field.getName(), new double[yearCount]));
                         }
                         bindings.put(field.getName(), field.get(model));
@@ -126,20 +129,19 @@ public class Controller {
     public String getResultsAsTsv() {
         StringBuilder tsvBuilder = new StringBuilder();
 
-        // First, add LATA values as the first line
-        int[] lataValues = (int[]) bindings.get("LATA");
-        if (lataValues != null) {
+        // Adds LATA values as the first line
+        int[] lata = (int[]) bindings.get("LATA");
+        if (lata != null) {
             tsvBuilder.append("LATA");
-            for (int value : lataValues) {
+            for (int value : lata) {
                 tsvBuilder.append("\t").append(value);
             }
             tsvBuilder.append("\n");
         }
 
-        // Process model fields
+        // Adds model fields
         Arrays.stream(model.getClass().getDeclaredFields())
                 .filter(field -> field.isAnnotationPresent(Bind.class) &&
-                        field.getName().length() > 1 &&
                         !field.getName().matches("[a-z]") &&
                         !field.getName().equals("LL"))
                 .forEach(field -> {
@@ -153,7 +155,7 @@ public class Controller {
                     }
                 });
 
-        // Process additional bindings not in model fields
+        // Adds additional bindings not present in model fields
         bindings.forEach((key, value) -> {
             if (!Arrays.stream(model.getClass().getDeclaredFields())
                     .anyMatch(field -> field.getName().equals(key)) &&
@@ -168,7 +170,6 @@ public class Controller {
         return tsvBuilder.toString();
     }
 
-    // Helper method to format array and other values
     private String formatValue(Object value) {
         if (value instanceof double[]) {
             double[] doubleArray = (double[]) value;
@@ -176,33 +177,19 @@ public class Controller {
                     .mapToObj(this::formatNumber)
                     .collect(Collectors.joining("\t"));
         }
-        return formatNumber(value);
+        return String.valueOf(value);
     }
 
-    private String formatNumber(Object value) {
-        if (value instanceof Number) {
-            double number = ((Number) value).doubleValue();
+    private String formatNumber(double value) {
+        // Creates custom symbols for formatting
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        symbols.setDecimalSeparator(',');
+        symbols.setGroupingSeparator(' ');
 
-            DecimalFormatSymbols symbols = new DecimalFormatSymbols();
-            symbols.setGroupingSeparator(' ');
+        // Sets the formatting pattern dynamically
+        String pattern = (value == Math.floor(value)) ? "#,##0" : "#,##0.##";
+        DecimalFormat formatter = new DecimalFormat(pattern, symbols);
 
-            // Check if number is whole (has no decimal part)
-            if (number == Math.floor(number)) {
-                DecimalFormat wholeFormatter = new DecimalFormat("#,##0", symbols);
-                return wholeFormatter.format(number);
-            }
-
-            // Format with 2 decimal places
-            DecimalFormat decimalFormatter = new DecimalFormat("#,##0.00", symbols);
-            String formatted = decimalFormatter.format(number);
-
-            // Remove decimal places if they're all zeros
-            if (formatted.endsWith(",00")) {
-                return formatted.substring(0, formatted.length() - 3);
-            }
-
-            return formatted.replace('.', ',');
-        }
-        return String.valueOf(value);
+        return formatter.format(value);
     }
 }
